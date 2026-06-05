@@ -105,6 +105,27 @@ def compare_results(
     }
 
 
+def unreadable_image_stats(message: str) -> dict[str, Any]:
+    return {
+        "dxnn_count": 0,
+        "onnx_count": 0,
+        "paired_count": 0,
+        "text_mismatch": 0,
+        "count_delta": 0,
+        "mean_score_diff": None,
+        "max_score_diff": None,
+        "max_box_diff": None,
+        "mismatches": [
+            {
+                "index": 0,
+                "type": "image",
+                "candidate": message,
+                "onnx": "",
+            }
+        ],
+    }
+
+
 def _is_number(value: object) -> bool:
     return isinstance(value, (float, int)) and not isinstance(value, bool)
 
@@ -324,7 +345,12 @@ def run_batch(args: argparse.Namespace) -> int:
             for image_path in image_paths:
                 image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
                 if image is None:
-                    print(f"skip unreadable image: {image_path}", file=sys.stderr)
+                    message = f"Cannot read image: {image_path}"
+                    print(message, file=sys.stderr)
+                    stats = unreadable_image_stats(message)
+                    add_image_stats(report, image_path, stats, ok=False)
+                    report["images"][-1]["dxnn_results"] = []
+                    report["images"][-1]["onnx_results"] = []
                     continue
                 candidate_results = candidate_ocr(image)
                 onnx_results = onnx_ocr(image)

@@ -91,20 +91,42 @@ def write_benchmark_markdown(path: Path, report: dict[str, Any]) -> None:
         ])
         if backend.get("error"):
             lines.extend([f"Error: `{backend['error']}`", ""])
+            if backend.get("images"):
+                lines.extend([
+                    "| Image | Lines | Mean ms | Std ms | Error |",
+                    "|---|---:|---:|---:|---|",
+                ])
+                for item in backend["images"]:
+                    error = str(item.get("error", "")).replace("|", "\\|")
+                    lines.append(
+                        f"| {item['image']} | {item.get('lines', 0)} | "
+                        f"{_format_float(item.get('mean_ms'), '.3f')} | "
+                        f"{_format_float(item.get('std_ms'), '.3f')} | "
+                        f"{error} |"
+                    )
+                lines.append("")
+            continue
+        summary = backend.get("summary") or {}
+        if not summary:
+            lines.extend(["Error: `No benchmark samples were recorded.`", ""])
             continue
         lines.extend([
-            f"- Average latency: `{backend['summary']['avg_mean_ms']:.3f} ms`",
-            f"- Min latency: `{backend['summary']['min_mean_ms']:.3f} ms`",
-            f"- Max latency: `{backend['summary']['max_mean_ms']:.3f} ms`",
-            f"- Total lines: `{backend['summary'].get('total_lines', 0)}`",
+            f"- Average latency: `{summary['avg_mean_ms']:.3f} ms`",
+            f"- Min latency: `{summary['min_mean_ms']:.3f} ms`",
+            f"- Max latency: `{summary['max_mean_ms']:.3f} ms`",
+            f"- Total lines: `{summary.get('total_lines', 0)}`",
+            f"- Unreadable images: `{summary.get('unreadable_images', 0)}`",
             "",
-            "| Image | Lines | Mean ms | Std ms |",
-            "|---|---:|---:|---:|",
+            "| Image | Lines | Mean ms | Std ms | Error |",
+            "|---|---:|---:|---:|---|",
         ])
         for item in backend["images"]:
+            error = str(item.get("error", "")).replace("|", "\\|")
             lines.append(
                 f"| {item['image']} | {item['lines']} | "
-                f"{item['mean_ms']:.3f} | {item['std_ms']:.3f} |"
+                f"{_format_float(item.get('mean_ms'), '.3f')} | "
+                f"{_format_float(item.get('std_ms'), '.3f')} | "
+                f"{error} |"
             )
         lines.append("")
     if report.get("comparison"):

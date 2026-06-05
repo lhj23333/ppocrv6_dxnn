@@ -226,11 +226,11 @@ class DBPostProcess:
             box = np.array(expanded_pts, dtype=np.float32)
             box[:, 0] = np.clip(np.round(box[:, 0] * ws), 0, dst_w)
             box[:, 1] = np.clip(np.round(box[:, 1] * hs), 0, dst_h)
-            boxes.append(box.astype(np.int16))
+            boxes.append(box.astype(np.int32))
             scores.append(score)
 
         if not boxes:
-            return np.empty((0, 4, 2), dtype=np.int16), []
+            return np.empty((0, 4, 2), dtype=np.int32), []
         return np.stack(boxes, axis=0), scores
 
     def __call__(self, pred: np.ndarray, img_shape: np.ndarray) -> Tuple[np.ndarray, List[float]]:
@@ -331,7 +331,21 @@ class CTCLabelDecode:
     def __call__(self, model_output: np.ndarray) -> Tuple[List[str], List[float]]:
         output = np.asarray(model_output)
         if output.ndim == 1:
-            output = output.reshape(1, 40, self.vocab_size)
+            if output.size % self.vocab_size != 0:
+                raise ValueError(
+                    "Cannot infer recognition output shape from flat size "
+                    f"{output.size} and vocab size {self.vocab_size}"
+                )
+            output = output.reshape(1, output.size // self.vocab_size, self.vocab_size)
+        elif output.ndim == 2:
+            output = output[np.newaxis, :, :]
+        elif output.ndim != 3:
+            raise ValueError(f"Recognition output must be 1D, 2D, or 3D, got {output.ndim}D")
+        if output.shape[-1] != self.vocab_size:
+            raise ValueError(
+                "Recognition output vocab dimension mismatch: "
+                f"got {output.shape[-1]}, expected {self.vocab_size}"
+            )
         indices = output.argmax(axis=-1)
         probs = output.max(axis=-1)
         texts: List[str] = []

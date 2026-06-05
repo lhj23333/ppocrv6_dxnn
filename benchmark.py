@@ -126,13 +126,24 @@ def main() -> None:
             "summary": {},
             "error": None,
         }
+        unreadable_count = 0
         try:
             with make_runner(backend, args) as ocr:
                 latencies = []
                 for image_path in images:
                     image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
                     if image is None:
-                        print(f"skip unreadable image: {image_path}", file=sys.stderr)
+                        message = f"Cannot read image: {image_path}"
+                        print(message, file=sys.stderr)
+                        backend_report["images"].append({
+                            "image": image_path.name,
+                            "path": str(image_path),
+                            "lines": 0,
+                            "mean_ms": None,
+                            "std_ms": None,
+                            "error": message,
+                        })
+                        unreadable_count += 1
                         continue
                     lines, mean_ms, std_ms = time_pipeline(ocr, image, args.warmup, args.loops)
                     latencies.append(mean_ms)
@@ -158,6 +169,11 @@ def main() -> None:
                         f"(range: {backend_report['summary']['min_mean_ms']:.1f} ~ "
                         f"{backend_report['summary']['max_mean_ms']:.1f})"
                     )
+                if unreadable_count:
+                    runtime_errors += unreadable_count
+                    backend_report["summary"]["unreadable_images"] = unreadable_count
+                if not latencies:
+                    backend_report["error"] = "No readable images were benchmarked."
         except Exception as exc:
             if backend in {"dxnn", "hybrid"}:
                 print(f"{backend.upper()} benchmark failed: {exc}", file=sys.stderr)
