@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ppocrv6-dxnn"
+version = "0.1.0"
+description = "PP-OCRv6 DXNN inference pipeline with static ONNX reference checks."
+requires-python = ">=3.10"
+# Runtime dependencies are pinned in requirements.txt and installed by install.sh.
+dependencies = []
+
+[tool.setuptools]
+packages = ["ppocrv6_dxnn"]

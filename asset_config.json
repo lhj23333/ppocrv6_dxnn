@@ -1,0 +1,17 @@
+{
+  "models": {
+    "det_dxnn": "models/ppocrv6_det.dxnn",
+    "rec_dxnn": "models/ppocrv6_rec.dxnn",
+    "det_onnx": "models/ppocrv6_det.onnx",
+    "rec_onnx": "models/ppocrv6_rec.onnx"
+  },
+  "data": {
+    "char_dict": "models/rec_char_dict.txt",
+    "demo_image": "assets/general_ocr_002.png",
+    "test_images": "test_images",
+    "eval_image_paths": [
+      "assets/general_ocr_002.png",
+      "test_images"
+    ]
+  }
+}
